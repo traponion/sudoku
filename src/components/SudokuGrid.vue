@@ -58,16 +58,16 @@ export default {
             this.animationGrid = this.generateRandomGrid();
 
             // 全てのセルを浮かせた状態で開始
-            await this.wait(500);
+            await this.wait(300); // 500ms から 300ms に短縮
 
-            // ランダムに数字を変える
-            for (let k = 0; k < 10; k++) {
+            // ランダムに数字を変える（回数を減らす）
+            for (let k = 0; k < 5; k++) { // 10 から 5 に減少
                 for (let i = 0; i < 9; i++) {
                     for (let j = 0; j < 9; j++) {
                         this.animationGrid[i][j] = Math.floor(Math.random() * 9) + 1;
                     }
                 }
-                await this.wait(100);
+                await this.wait(50); // 100ms から 50ms に短縮
             }
 
             // 空白セルを沈める
@@ -75,7 +75,7 @@ export default {
                 for (let j = 0; j < 9; j++) {
                     if (newState.initialGrid[i][j] === 0) {
                         this.animationGrid[i][j] = 0;
-                        await this.wait(30);
+                        await this.wait(15); // 30ms から 15ms に短縮
                     }
                 }
             }
@@ -85,13 +85,13 @@ export default {
                 for (let j = 0; j < 9; j++) {
                     if (newState.initialGrid[i][j] !== 0) {
                         this.animationGrid[i][j] = newState.initialGrid[i][j];
-                        await this.wait(30);
+                        await this.wait(15); // 30ms から 15ms に短縮
                     }
                 }
             }
 
             // アニメーション終了後の処理
-            await this.wait(500);
+            await this.wait(300); // 500ms から 300ms に短縮
             this.isAnimating = false;
 
             // ストアの状態を更新
@@ -99,7 +99,7 @@ export default {
             this.$store.commit('setInitialGrid', newState.initialGrid);
             this.$store.commit('setSolvedSudokuGrid', newState.solvedSudokuGrid);
         },
-
+        
         wait(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         },
@@ -181,13 +181,15 @@ export default {
 }
 
 .animating .cell:not(.floating) {
-    color: #808080 !important; /* アニメーション中の非浮遊セルは灰色 */
+    color: #808080 !important;
+    /* アニメーション中の非浮遊セルは灰色 */
 }
 
 .floating {
     transform: translateZ(20px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    z-index: 1; /* 他のセルよりも前面に表示 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    /* 他のセルよりも前面に表示 */
 }
 
 
@@ -198,8 +200,9 @@ export default {
 @keyframes sink {
     0% {
         transform: translateZ(20px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
+
     100% {
         transform: translateZ(0);
         box-shadow: none;

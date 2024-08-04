@@ -1,5 +1,3 @@
-
-
 import { createStore } from 'vuex';
 
 export default createStore({
@@ -9,6 +7,7 @@ export default createStore({
         solvedSudokuGrid: [],
         mistakeCount: 0,
         isLoaded: false,
+        difficulty: 'normal',
     },
     mutations: {
         setSudokuGrid(state, grid) {
@@ -35,6 +34,9 @@ export default createStore({
         setIsLoaded(state, value) {
             state.isLoaded = value;
         },
+        setDifficulty(state, difficulty) {
+            state.difficulty = difficulty;
+        },
     },
     actions: {
         async loadGameState({ commit, dispatch }) {
@@ -45,13 +47,14 @@ export default createStore({
                 commit('setInitialGrid', gameState.initialGrid);
                 commit('setSolvedSudokuGrid', gameState.solvedSudokuGrid);
                 commit('setMistakeCount', gameState.mistakeCount);
+                commit('setDifficulty', gameState.difficulty);
             } else {
                 await dispatch('generateSudoku');
             }
             commit('setIsLoaded', true);
         },
-        generateSudoku({ commit, dispatch }) {
-            const { grid, solvedGrid } = generateSudoku();
+        generateSudoku({ commit, dispatch, state }) {
+            const { grid, solvedGrid } = generateSudoku(state.difficulty);
             commit('setSudokuGrid', grid);
             commit('setInitialGrid', JSON.parse(JSON.stringify(grid)));
             commit('setSolvedSudokuGrid', solvedGrid);
@@ -85,6 +88,7 @@ export default createStore({
                 initialGrid: state.initialGrid,
                 solvedSudokuGrid: state.solvedSudokuGrid,
                 mistakeCount: state.mistakeCount,
+                difficulty: state.difficulty,
             };
             localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
         },
@@ -92,14 +96,18 @@ export default createStore({
             commit('resetMistakeCount');
             return dispatch('generateSudoku');
         },
+        setDifficulty({ commit, dispatch }, difficulty) {
+            commit('setDifficulty', difficulty);
+            return dispatch('generateSudoku');
+        },
     },
 });
 
-function generateSudoku() {
+function generateSudoku(difficulty) {
     const grid = createEmptyGrid();
     if (fillGrid(grid)) {
         const solvedGrid = JSON.parse(JSON.stringify(grid));
-        removeNumbers(grid);
+        removeNumbers(grid, difficulty);
         return { grid, solvedGrid };
     }
     return null; // 稀に生成に失敗した場合
@@ -127,21 +135,49 @@ function fillGrid(grid) {
     return false; // 解決策が見つからない
 }
 
-function removeNumbers(grid) {
+function removeNumbers(grid, difficulty) {
     const cellsToRemove = [];
     for (let i = 0; i < 81; i++) {
         cellsToRemove.push(i);
     }
     shuffleArray(cellsToRemove);
 
+    const difficultySettings = {
+        easy: { totalRemove: 35, maxPerColumn: 5 },
+        normal: { totalRemove: 45, maxPerColumn: 6 },
+        hard: { totalRemove: 55, maxPerColumn: 7 },
+    };
+
+    const setting = difficultySettings[difficulty];
+    let removedCount = 0;
+    const columnCounts = Array(9).fill(0);
+
     for (const cellIndex of cellsToRemove) {
+        if (removedCount >= setting.totalRemove) break;
+
         const row = Math.floor(cellIndex / 9);
         const col = cellIndex % 9;
-        const temp = grid[row][col];
-        grid[row][col] = 0;
 
-        if (!hasUniqueSolution(grid)) {
-            grid[row][col] = temp; // 元に戻す
+        if (columnCounts[col] < setting.maxPerColumn) {
+            const symmetricRow = 8 - row;
+            const symmetricCol = 8 - col;
+
+            if (difficulty === 'hard' || grid[symmetricRow][symmetricCol] !== 0) {
+                const temp = grid[row][col];
+                grid[row][col] = 0;
+
+                if (hasUniqueSolution(grid)) {
+                    removedCount++;
+                    columnCounts[col]++;
+                    if (difficulty !== 'hard') {
+                        grid[symmetricRow][symmetricCol] = 0;
+                        removedCount++;
+                        columnCounts[symmetricCol]++;
+                    }
+                } else {
+                    grid[row][col] = temp;
+                }
+            }
         }
     }
 }
