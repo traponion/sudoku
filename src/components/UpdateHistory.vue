@@ -1,32 +1,36 @@
 <template>
     <div class="update-history">
-      <h2>更新履歴</h2>
-      <ul>
-        <li v-for="update in updates" :key="update.date">
-          <strong>{{ update.date }}</strong>: {{ update.description }}
-        </li>
-      </ul>
+        <h2>更新履歴</h2>
+        <ul>
+            <li v-for="update in updates" :key="update.date">
+                <strong>{{ update.date }}</strong>: {{ update.description }}
+            </li>
+        </ul>
     </div>
-  </template>
-  
-  <script>
-  export default {
+</template>
+
+<script>
+export default {
     name: 'UpdateHistory',
     data() {
-      return {
-        updates: [
-          {
-            date: '2024-08-04',
-            description: '初回リリース'
-          }
-        ]
-      };
+        return {
+            updates: [
+                {
+                    date: '2024-08-05',
+                    description: '難易度設定機能を追加'
+                },
+                {
+                    date: '2024-08-04',
+                    description: '初回リリース'
+                },
+            ]
+        };
     }
-  };
-  </script>
-  
-  <style scoped>
-  .update-history {
+};
+</script>
+
+<style scoped>
+.update-history {
     margin: 20px;
     padding: 15px;
     background-color: #f5f5f5;
@@ -34,25 +38,25 @@
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  h2 {
+}
+
+h2 {
     color: #333;
     border-bottom: 2px solid #333;
     padding-bottom: 10px;
-  }
-  
-  ul {
+}
+
+ul {
     list-style-type: none;
     padding: 0;
-  }
-  
-  li {
+}
+
+li {
     margin-bottom: 10px;
     line-height: 1.5;
-  }
-  
-  strong {
+}
+
+strong {
     color: #555;
-  }
-  </style>
+}
+</style>
