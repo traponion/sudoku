@@ -1,0 +1,671 @@
+
+==================================================
+File: App.vue
+==================================================
+
+<template>
+  <div id="app" v-if="isLoaded">
+    <h1 class="game-title">数独ゲーム</h1>
+    <SudokuGrid @cell-selected="onCellSelected" :selectedCell="selectedCell" ref="sudokuGrid" />
+    <div class="number-selector">
+      <div v-for="n in 9" :key="n" @click="selectNumber(n)" class="number">
+        {{ n }}
+      </div>
+      <div @click="eraseNumber" class="number eraser">
+        消
+      </div>
+    </div>
+    <GameControls @game-reset="onGameReset" />
+    <p class="mistake-count">間違った回数: {{ mistakeCount }}</p>
+  </div>
+</template>
+
+<script>
+import SudokuGrid from './components/SudokuGrid.vue';
+import GameControls from './components/GameControls.vue';
+import { mapState } from 'vuex';
+
+export default {
+  name: 'App',
+  components: {
+    SudokuGrid,
+    GameControls,
+  },
+  data() {
+    return {
+      selectedCell: null,
+    };
+  },
+  computed: {
+    ...mapState(['mistakeCount', 'sudokuGrid', 'isLoaded']),
+  },
+  methods: {
+    onCellSelected(cell) {
+      this.selectedCell = cell;
+    },
+    selectNumber(number) {
+      if (this.selectedCell) {
+        this.$store.dispatch('updateCell', { ...this.selectedCell, number });
+      }
+    },
+    eraseNumber() {
+      if (this.selectedCell) {
+        this.$store.dispatch('updateCell', { ...this.selectedCell, number: 0 });
+      }
+    },
+    async onGameReset() {
+      this.selectedCell = null;
+      // 新しい数独を生成し、その状態を取得
+      const newSudokuState = await this.$store.dispatch('resetGame');
+      // 新しい状態でアニメーションを実行
+      await this.$refs.sudokuGrid.playResetAnimation(newSudokuState);
+    },
+  },
+  mounted() {
+    this.$store.dispatch('loadGameState');
+  },
+};
+</script>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #333;
+  margin-top: 60px;
+}
+
+.game-title {
+  font-size: 2em;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.number-selector {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.number {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #e0e0e0;
+  color: #333;
+  margin: 0 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.number:hover {
+  background-color: #ccc;
+}
+
+.eraser {
+  background-color: #f44336;
+  /* 重要な機能なので色を使用 */
+  color: white;
+}
+
+.eraser:hover {
+  background-color: #d32f2f;
+}
+
+.mistake-count {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #000;
+}
+</style>
+
+
+==================================================
+File: main.js
+==================================================
+
+import { createApp } from 'vue'
+import App from './App.vue'
+import store from './store';
+
+createApp(App).use(store).mount('#app');
+
+
+==================================================
+File: store/index.js
+==================================================
+
+import { createStore } from 'vuex';
+
+export default createStore({
+    state: {
+        sudokuGrid: [],
+        initialGrid: [],
+        solvedSudokuGrid: [],
+        mistakeCount: 0,
+        isLoaded: false,
+    },
+    mutations: {
+        setSudokuGrid(state, grid) {
+            state.sudokuGrid = grid;
+        },
+        setInitialGrid(state, grid) {
+            state.initialGrid = grid;
+        },
+        setSolvedSudokuGrid(state, grid) {
+            state.solvedSudokuGrid = grid;
+        },
+        updateCell(state, { row, col, number }) {
+            state.sudokuGrid[row][col] = number;
+        },
+        incrementMistakeCount(state) {
+            state.mistakeCount++;
+        },
+        setMistakeCount(state, count) {
+            state.mistakeCount = count;
+        },
+        resetMistakeCount(state) {
+            state.mistakeCount = 0;
+        },
+        setIsLoaded(state, value) {
+            state.isLoaded = value;
+        },
+    },
+    actions: {
+        async loadGameState({ commit, dispatch }) {
+            const savedState = localStorage.getItem('sudokuGameState');
+            if (savedState) {
+                const gameState = JSON.parse(savedState);
+                commit('setSudokuGrid', gameState.sudokuGrid);
+                commit('setInitialGrid', gameState.initialGrid);
+                commit('setSolvedSudokuGrid', gameState.solvedSudokuGrid);
+                commit('setMistakeCount', gameState.mistakeCount);
+            } else {
+                await dispatch('generateSudoku');
+            }
+            commit('setIsLoaded', true);
+        },
+        generateSudoku({ commit, dispatch }) {
+            function generateSudoku() {
+                const grid = Array(9).fill().map(() => Array(9).fill(0));
+
+                function isValid(row, col, num) {
+                    // Check row
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[row][i] === num) return false;
+                    }
+
+                    // Check column
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[i][col] === num) return false;
+                    }
+
+                    // Check 3x3 block
+                    const blockRow = Math.floor(row / 3) * 3;
+                    const blockCol = Math.floor(col / 3) * 3;
+                    for (let i = blockRow; i < blockRow + 3; i++) {
+                        for (let j = blockCol; j < blockCol + 3; j++) {
+                            if (grid[i][j] === num) return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                function fillGrid(row, col) {
+                    if (row === 9) return true;
+
+                    const nextRow = col === 8 ? row + 1 : row;
+                    const nextCol = (col + 1) % 9;
+
+                    if (grid[row][col] !== 0) return fillGrid(nextRow, nextCol);
+
+                    const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                    shuffleArray(numbers);
+
+                    for (const num of numbers) {
+                        if (isValid(row, col, num)) {
+                            grid[row][col] = num;
+                            if (fillGrid(nextRow, nextCol)) return true;
+                            grid[row][col] = 0;
+                        }
+                    }
+
+                    return false;
+                }
+
+
+                fillGrid(0, 0);
+                return grid;
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+            const grid = generateSudoku();
+            const solvedGrid = JSON.parse(JSON.stringify(grid));
+
+            const minRemoveCells = 25;
+            const maxRemoveCells = 35;
+            const removeCells = Math.floor(Math.random() * (maxRemoveCells - minRemoveCells + 1)) + minRemoveCells;
+            const removed = new Set();
+
+            for (let i = 0; i < removeCells; i++) {
+                let row, col;
+                do {
+                    row = Math.floor(Math.random() * 9);
+                    col = Math.floor(Math.random() * 9);
+                } while (removed.has(`${row},${col}`));
+
+                const symRow = 8 - row;
+                const symCol = 8 - col;
+
+                grid[row][col] = 0;
+                grid[symRow][symCol] = 0;
+
+                removed.add(`${row},${col}`);
+                removed.add(`${symRow},${symCol}`);
+            }
+
+            commit('setSudokuGrid', grid);
+            commit('setInitialGrid', JSON.parse(JSON.stringify(grid)));
+            commit('setSolvedSudokuGrid', solvedGrid);
+            dispatch('saveGameState');
+
+            // 新しい状態を返す
+            return {
+                sudokuGrid: grid,
+                initialGrid: JSON.parse(JSON.stringify(grid)),
+                solvedSudokuGrid: solvedGrid
+            };
+        },
+        updateCell({ commit, state, dispatch }, payload) {
+            if (state.initialGrid[payload.row][payload.col] === 0) {
+                const currentValue = state.sudokuGrid[payload.row][payload.col];
+                const correctValue = state.solvedSudokuGrid[payload.row][payload.col];
+
+                commit('updateCell', payload);
+
+                if (payload.number !== 0 && payload.number !== currentValue) {
+                    if (payload.number !== correctValue) {
+                        commit('incrementMistakeCount');
+                    }
+                }
+
+                // セルの更新後に自動保存
+                dispatch('saveGameState');
+            }
+        },
+        saveGameState({ state }) {
+            const gameState = {
+                sudokuGrid: state.sudokuGrid,
+                initialGrid: state.initialGrid,
+                solvedSudokuGrid: state.solvedSudokuGrid,
+                mistakeCount: state.mistakeCount,
+            };
+            localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
+        },
+        resetGame({ dispatch, commit }) {
+            commit('resetMistakeCount');
+            return dispatch('generateSudoku');
+        },
+    },
+});
+
+
+==================================================
+File: components/ConfirmModal.vue
+==================================================
+
+<template>
+    <div v-if="isOpen" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-content">
+                <h3 class="modal-title">{{ title }}</h3>
+                <p class="modal-message">{{ message }}</p>
+                <div class="modal-actions">
+                    <button @click="confirm" class="btn btn-confirm">確認</button>
+                    <button @click="cancel" class="btn btn-cancel">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+export default {
+    name: 'ConfirmModal',
+    props: {
+        isOpen: Boolean,
+        title: String,
+        message: String,
+    },
+    methods: {
+        confirm() {
+            this.$emit('confirm');
+        },
+        cancel() {
+            this.$emit('cancel');
+        },
+    },
+};
+</script>
+
+<style scoped>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modal-title {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #333;
+}
+
+.modal-message {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s;
+}
+
+.btn-confirm {
+    background-color: #333;
+    color: white;
+}
+
+.btn-confirm:hover {
+    background-color: #555;
+}
+
+.btn-cancel {
+    background-color: #ccc;
+    color: #333;
+}
+
+.btn-cancel:hover {
+    background-color: #999;
+}
+</style>
+
+
+==================================================
+File: components/SudokuGrid.vue
+==================================================
+
+<template>
+    <div class="sudoku-container">
+        <div class="sudoku-grid">
+            <div v-for="(cell, index) in flattenedGrid" :key="index" class="cell" :class="{
+                'selected': isSelected(Math.floor(index / 9), index % 9),
+                'initial': isInitialCell(Math.floor(index / 9), index % 9),
+                'incorrect': isIncorrectCell(Math.floor(index / 9), index % 9),
+                'selectable': !isInitialCell(Math.floor(index / 9), index % 9),
+                'animating': isAnimating
+            }" @click="selectCell(Math.floor(index / 9), index % 9)">
+                {{ cell !== 0 ? cell : '' }}
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import { mapState } from 'vuex';
+
+export default {
+    name: 'SudokuGrid',
+    props: ['selectedCell'],
+    data() {
+        return {
+            isAnimating: false,
+            animationGrid: [],
+        };
+    },
+    computed: {
+        ...mapState(['sudokuGrid', 'initialGrid', 'solvedSudokuGrid']),
+        flattenedGrid() {
+            return this.isAnimating ? this.animationGrid.flat() : this.sudokuGrid.flat();
+        }
+    },
+    methods: {
+        selectCell(row, col) {
+            if (!this.isInitialCell(row, col) && !this.isAnimating) {
+                this.$emit('cell-selected', { row, col });
+            }
+        },
+        isSelected(row, col) {
+            return this.selectedCell && this.selectedCell.row === row && this.selectedCell.col === col;
+        },
+        isInitialCell(row, col) {
+            return this.initialGrid[row][col] !== 0;
+        },
+        isIncorrectCell(row, col) {
+            return this.sudokuGrid[row][col] !== 0 &&
+                this.sudokuGrid[row][col] !== this.solvedSudokuGrid[row][col];
+        },
+        async playResetAnimation(newState) {
+            this.isAnimating = true;
+            this.animationGrid = Array(9).fill().map(() => Array(9).fill(0));
+
+            // Step 1: Fill all cells with random numbers
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    this.animationGrid[i][j] = Math.floor(Math.random() * 9) + 1;
+                }
+            }
+            await this.wait(500);
+
+            // Step 2: Rapidly change numbers
+            for (let k = 0; k < 10; k++) {
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        this.animationGrid[i][j] = Math.floor(Math.random() * 9) + 1;
+                    }
+                }
+                await this.wait(100);
+            }
+
+            // Step 3: Gradually reveal the new initial grid
+            const initialCells = newState.initialGrid.flat();
+            const cellIndices = Array(81).fill().map((_, index) => index);
+            this.shuffleArray(cellIndices);
+
+            for (const index of cellIndices) {
+                const row = Math.floor(index / 9);
+                const col = index % 9;
+
+                this.animationGrid[row][col] = initialCells[index];
+                await this.wait(30);
+            }
+
+            // Step 4: Ensure the final state matches the new initial grid
+            this.animationGrid = JSON.parse(JSON.stringify(newState.initialGrid));
+            await this.wait(500);
+
+            this.isAnimating = false;
+
+            // アニメーション完了後、ストアの状態を更新
+            this.$store.commit('setSudokuGrid', newState.sudokuGrid);
+            this.$store.commit('setInitialGrid', newState.initialGrid);
+            this.$store.commit('setSolvedSudokuGrid', newState.solvedSudokuGrid);
+        },
+
+        wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        },
+
+        shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    }
+};
+</script>
+
+<style scoped>
+.sudoku-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.sudoku-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 1px;
+    background-color: #000;
+    border: 2px solid #000;
+    width: 450px;
+    height: 450px;
+}
+
+.cell {
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.cell:nth-child(3n) {
+    border-right: 2px solid #000;
+}
+
+.cell:nth-child(n+19):nth-child(-n+27),
+.cell:nth-child(n+46):nth-child(-n+54) {
+    border-bottom: 2px solid #000;
+}
+
+.selected {
+    background-color: #e0e0e0;
+}
+
+.initial {
+    color: #808080;
+}
+
+.incorrect {
+    color: red;
+}
+
+.selectable {
+    cursor: pointer;
+}
+
+.selectable:hover {
+    background-color: #f0f0f0;
+}
+
+.animating {
+    transition: all 0.1s;
+}
+</style>
+
+
+==================================================
+File: components/GameControls.vue
+==================================================
+
+<template>
+    <div class="game-controls">
+        <button @click="showResetConfirmation" class="reset-button">リセット</button>
+        <ConfirmModal :isOpen="isModalOpen" title="ゲームリセット" message="本当にゲームをリセットしますか？進行状況は失われます。"
+            @confirm="confirmReset" @cancel="cancelReset" />
+    </div>
+</template>
+
+<script>
+import ConfirmModal from './ConfirmModal.vue';
+
+export default {
+    name: 'GameControls',
+    components: {
+        ConfirmModal,
+    },
+    data() {
+        return {
+            isModalOpen: false,
+        };
+    },
+    methods: {
+        showResetConfirmation() {
+            this.isModalOpen = true;
+        },
+        confirmReset() {
+            this.$store.dispatch('resetGame');
+            this.$emit('game-reset');
+            this.isModalOpen = false;
+        },
+        cancelReset() {
+            this.isModalOpen = false;
+        },
+    },
+};
+</script>
+
+<style scoped>
+.game-controls {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.reset-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: white;
+    background-color: #333;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.reset-button:hover {
+    background-color: #555;
+}
+</style>
+
