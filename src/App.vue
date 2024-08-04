@@ -12,12 +12,14 @@
     </div>
     <GameControls @game-reset="onGameReset" />
     <p class="mistake-count">間違った回数: {{ mistakeCount }}</p>
+    <UpdateHistory />
   </div>
 </template>
 
 <script>
 import SudokuGrid from './components/SudokuGrid.vue';
 import GameControls from './components/GameControls.vue';
+import UpdateHistory from './components/UpdateHistory.vue';
 import { mapState } from 'vuex';
 
 export default {
@@ -25,6 +27,7 @@ export default {
   components: {
     SudokuGrid,
     GameControls,
+    UpdateHistory,
   },
   data() {
     return {
