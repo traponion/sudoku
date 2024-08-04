@@ -10,8 +10,9 @@
         消
       </div>
     </div>
-    <GameControls @game-reset="onGameReset" />
+    <GameControls @game-reset="onGameReset" @difficulty-changed="onDifficultyChanged" />
     <p class="mistake-count">間違った回数: {{ mistakeCount }}</p>
+    <p class="current-difficulty">現在の難易度: {{ difficulty }}</p>
     <UpdateHistory />
   </div>
 </template>
@@ -35,7 +36,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(['mistakeCount', 'sudokuGrid', 'isLoaded']),
+    ...mapState(['mistakeCount', 'sudokuGrid', 'isLoaded', 'difficulty']),
   },
   methods: {
     onCellSelected(cell) {
@@ -56,6 +57,11 @@ export default {
       // 新しい数独を生成し、その状態を取得
       const newSudokuState = await this.$store.dispatch('resetGame');
       // 新しい状態でアニメーションを実行
+      await this.$refs.sudokuGrid.playResetAnimation(newSudokuState);
+    },
+    async onDifficultyChanged(newDifficulty) {
+      this.selectedCell = null;
+      const newSudokuState = await this.$store.dispatch('setDifficulty', newDifficulty);
       await this.$refs.sudokuGrid.playResetAnimation(newSudokuState);
     },
   },
@@ -120,5 +126,11 @@ export default {
   font-size: 18px;
   font-weight: bold;
   color: #000;
+}
+
+.current-difficulty {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
 }
 </style>
