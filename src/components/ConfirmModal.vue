@@ -13,22 +13,23 @@
     </div>
 </template>
 
-<script>
-export default {
-    name: 'ConfirmModal',
-    props: {
-        isOpen: Boolean,
-        title: String,
-        message: String,
-    },
-    methods: {
-        confirm() {
-            this.$emit('confirm');
-        },
-        cancel() {
-            this.$emit('cancel');
-        },
-    },
+<script setup>
+import { defineProps, defineEmits } from 'vue';
+
+defineProps({
+    isOpen: Boolean,
+    title: String,
+    message: String,
+});
+
+const emit = defineEmits(['confirm', 'cancel']);
+
+const confirm = () => {
+    emit('confirm');
+};
+
+const cancel = () => {
+    emit('cancel');
 };
 </script>
 

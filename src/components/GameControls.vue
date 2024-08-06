@@ -12,44 +12,36 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, defineEmits } from 'vue';
+import { useStore } from 'vuex';
 import ConfirmModal from './ConfirmModal.vue';
-import { mapState } from 'vuex';
 
-export default {
-    name: 'GameControls',
-    components: {
-        ConfirmModal,
-    },
-    computed: {
-        ...mapState(['difficulty']),
-        currentDifficulty() {
-            return this.difficulty;
-        }
-    },
-    data() {
-        return {
-            isModalOpen: false,
-        };
-    },
-    methods: {
-        showResetConfirmation() {
-            this.isModalOpen = true;
-        },
-        confirmReset() {
-            this.$store.dispatch('resetGame');
-            this.$emit('game-reset');
-            this.isModalOpen = false;
-        },
-        cancelReset() {
-            this.isModalOpen = false;
-        },
-        changeDifficulty(newDifficulty) {
-            if (this.currentDifficulty !== newDifficulty) {
-                this.$emit('difficulty-changed', newDifficulty);
-            }
-        },
-    },
+const store = useStore();
+const emit = defineEmits(['game-reset', 'difficulty-changed']);
+
+const isModalOpen = ref(false);
+
+const currentDifficulty = computed(() => store.state.difficulty);
+
+const showResetConfirmation = () => {
+    isModalOpen.value = true;
+};
+
+const confirmReset = () => {
+    store.dispatch('resetGame');
+    emit('game-reset');
+    isModalOpen.value = false;
+};
+
+const cancelReset = () => {
+    isModalOpen.value = false;
+};
+
+const changeDifficulty = (newDifficulty) => {
+    if (currentDifficulty.value !== newDifficulty) {
+        emit('difficulty-changed', newDifficulty);
+    }
 };
 </script>
 
