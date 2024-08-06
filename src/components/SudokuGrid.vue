@@ -15,104 +15,89 @@
     </div>
 </template>
 
-<script>
-import { mapState } from 'vuex';
+<script setup>
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
+import { defineProps, defineEmits, defineExpose } from 'vue';
 
-export default {
-    name: 'SudokuGrid',
-    props: ['selectedCell'],
-    data() {
-        return {
-            isAnimating: false,
-            animationGrid: [],
-        };
-    },
-    computed: {
-        ...mapState(['sudokuGrid', 'initialGrid', 'solvedSudokuGrid']),
-        flattenedGrid() {
-            return this.isAnimating ? this.animationGrid.flat() : this.sudokuGrid.flat();
-        }
-    },
-    methods: {
-        selectCell(row, col) {
-            if (!this.isInitialCell(row, col) && !this.isAnimating) {
-                this.$emit('cell-selected', { row, col });
-            }
-        },
-        isSelected(row, col) {
-            return this.selectedCell && this.selectedCell.row === row && this.selectedCell.col === col;
-        },
-        isInitialCell(row, col) {
-            return this.initialGrid[row][col] !== 0;
-        },
-        isIncorrectCell(row, col) {
-            return this.sudokuGrid[row][col] !== 0 &&
-                this.sudokuGrid[row][col] !== this.solvedSudokuGrid[row][col];
-        },
+const props = defineProps({
+    selectedCell: Object
+});
 
-        generateRandomGrid() {
-            return Array(9).fill().map(() => Array(9).fill().map(() => Math.floor(Math.random() * 9) + 1));
-        },
-        async playResetAnimation(newState) {
-            this.isAnimating = true;
-            this.animationGrid = this.generateRandomGrid();
+const emit = defineEmits(['cell-selected']);
 
-            // 全てのセルを浮かせた状態で開始
-            await this.wait(300); // 500ms から 300ms に短縮
+const store = useStore();
+const isAnimating = ref(false);
+const animationGrid = ref([]);
 
-            // ランダムに数字を変える（回数を減らす）
-            for (let k = 0; k < 5; k++) { // 10 から 5 に減少
-                for (let i = 0; i < 9; i++) {
-                    for (let j = 0; j < 9; j++) {
-                        this.animationGrid[i][j] = Math.floor(Math.random() * 9) + 1;
-                    }
-                }
-                await this.wait(50); // 100ms から 50ms に短縮
-            }
+const sudokuGrid = computed(() => store.state.sudokuGrid);
+const initialGrid = computed(() => store.state.initialGrid);
+const solvedSudokuGrid = computed(() => store.state.solvedSudokuGrid);
 
-            // 空白セルを沈める
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    if (newState.initialGrid[i][j] === 0) {
-                        this.animationGrid[i][j] = 0;
-                        await this.wait(15); // 30ms から 15ms に短縮
-                    }
-                }
-            }
+const flattenedGrid = computed(() =>
+    isAnimating.value ? animationGrid.value.flat() : sudokuGrid.value.flat()
+);
 
-            // 残りの数字を正しい値に設定
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    if (newState.initialGrid[i][j] !== 0) {
-                        this.animationGrid[i][j] = newState.initialGrid[i][j];
-                        await this.wait(15); // 30ms から 15ms に短縮
-                    }
-                }
-            }
+const selectCell = (row, col) => {
+    if (!isInitialCell(row, col) && !isAnimating.value) {
+        emit('cell-selected', { row, col });
+    }
+};
 
-            // アニメーション終了後の処理
-            await this.wait(300); // 500ms から 300ms に短縮
-            this.isAnimating = false;
+const isSelected = (row, col) =>
+    props.selectedCell && props.selectedCell.row === row && props.selectedCell.col === col;
 
-            // ストアの状態を更新
-            this.$store.commit('setSudokuGrid', newState.sudokuGrid);
-            this.$store.commit('setInitialGrid', newState.initialGrid);
-            this.$store.commit('setSolvedSudokuGrid', newState.solvedSudokuGrid);
-        },
-        
-        wait(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        },
+const isInitialCell = (row, col) => initialGrid.value[row][col] !== 0;
 
-        shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+const isIncorrectCell = (row, col) =>
+    sudokuGrid.value[row][col] !== 0 &&
+    sudokuGrid.value[row][col] !== solvedSudokuGrid.value[row][col];
+
+const generateRandomGrid = () =>
+    Array(9).fill().map(() => Array(9).fill().map(() => Math.floor(Math.random() * 9) + 1));
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const playResetAnimation = async (newState) => {
+    isAnimating.value = true;
+    animationGrid.value = generateRandomGrid();
+
+    await wait(300);
+
+    for (let k = 0; k < 5; k++) {
+        animationGrid.value = generateRandomGrid();
+        await wait(50);
+    }
+
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            if (newState.initialGrid[i][j] === 0) {
+                animationGrid.value[i][j] = 0;
+                await wait(15);
             }
         }
     }
+
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            if (newState.initialGrid[i][j] !== 0) {
+                animationGrid.value[i][j] = newState.initialGrid[i][j];
+                await wait(15);
+            }
+        }
+    }
+
+    await wait(300);
+    isAnimating.value = false;
+
+    store.commit('setSudokuGrid', newState.sudokuGrid);
+    store.commit('setInitialGrid', newState.initialGrid);
+    store.commit('setSolvedSudokuGrid', newState.solvedSudokuGrid);
 };
+
+defineExpose({ playResetAnimation });
 </script>
+
 <style scoped>
 .sudoku-container {
     display: flex;

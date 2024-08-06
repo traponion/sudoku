@@ -17,58 +17,53 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useStore } from 'vuex';
 import SudokuGrid from './components/SudokuGrid.vue';
 import GameControls from './components/GameControls.vue';
 import UpdateHistory from './components/UpdateHistory.vue';
-import { mapState } from 'vuex';
 
-export default {
-  name: 'App',
-  components: {
-    SudokuGrid,
-    GameControls,
-    UpdateHistory,
-  },
-  data() {
-    return {
-      selectedCell: null,
-    };
-  },
-  computed: {
-    ...mapState(['mistakeCount', 'sudokuGrid', 'isLoaded', 'difficulty']),
-  },
-  methods: {
-    onCellSelected(cell) {
-      this.selectedCell = cell;
-    },
-    selectNumber(number) {
-      if (this.selectedCell) {
-        this.$store.dispatch('updateCell', { ...this.selectedCell, number });
-      }
-    },
-    eraseNumber() {
-      if (this.selectedCell) {
-        this.$store.dispatch('updateCell', { ...this.selectedCell, number: 0 });
-      }
-    },
-    async onGameReset() {
-      this.selectedCell = null;
-      // 新しい数独を生成し、その状態を取得
-      const newSudokuState = await this.$store.dispatch('resetGame');
-      // 新しい状態でアニメーションを実行
-      await this.$refs.sudokuGrid.playResetAnimation(newSudokuState);
-    },
-    async onDifficultyChanged(newDifficulty) {
-      this.selectedCell = null;
-      const newSudokuState = await this.$store.dispatch('setDifficulty', newDifficulty);
-      await this.$refs.sudokuGrid.playResetAnimation(newSudokuState);
-    },
-  },
-  mounted() {
-    this.$store.dispatch('loadGameState');
-  },
+const store = useStore();
+
+const selectedCell = ref(null);
+const sudokuGrid = ref(null);
+
+const mistakeCount = computed(() => store.state.mistakeCount);
+const isLoaded = computed(() => store.state.isLoaded);
+const difficulty = computed(() => store.state.difficulty);
+
+const onCellSelected = (cell) => {
+  selectedCell.value = cell;
 };
+
+const selectNumber = (number) => {
+  if (selectedCell.value) {
+    store.dispatch('updateCell', { ...selectedCell.value, number });
+  }
+};
+
+const eraseNumber = () => {
+  if (selectedCell.value) {
+    store.dispatch('updateCell', { ...selectedCell.value, number: 0 });
+  }
+};
+
+const onGameReset = async () => {
+  selectedCell.value = null;
+  const newSudokuState = await store.dispatch('resetGame');
+  await sudokuGrid.value.playResetAnimation(newSudokuState);
+};
+
+const onDifficultyChanged = async (newDifficulty) => {
+  selectedCell.value = null;
+  const newSudokuState = await store.dispatch('setDifficulty', newDifficulty);
+  await sudokuGrid.value.playResetAnimation(newSudokuState);
+};
+
+onMounted(() => {
+  store.dispatch('loadGameState');
+});
 </script>
 
 <style>
@@ -113,7 +108,6 @@ export default {
 
 .eraser {
   background-color: #f44336;
-  /* 重要な機能なので色を使用 */
   color: white;
 }
 

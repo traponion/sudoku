@@ -9,24 +9,19 @@
     </div>
 </template>
 
-<script>
-export default {
-    name: 'UpdateHistory',
-    data() {
-        return {
-            updates: [
-                {
-                    date: '2024-08-05',
-                    description: '難易度設定機能を追加'
-                },
-                {
-                    date: '2024-08-04',
-                    description: '初回リリース'
-                },
-            ]
-        };
-    }
-};
+<script setup>
+import { ref } from 'vue'
+
+const updates = ref([
+    {
+        date: '2024-08-05',
+        description: '難易度設定機能を追加'
+    },
+    {
+        date: '2024-08-04',
+        description: '初回リリース'
+    },
+])
 </script>
 
 <style scoped>
