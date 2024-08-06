@@ -14,22 +14,22 @@
 
 <script setup>
 import { ref, computed, defineEmits } from 'vue';
-import { useStore } from 'vuex';
+import { useSudokuStore } from '../store/sudokuStore';
 import ConfirmModal from './ConfirmModal.vue';
 
-const store = useStore();
+const sudokuStore = useSudokuStore();
 const emit = defineEmits(['game-reset', 'difficulty-changed']);
 
 const isModalOpen = ref(false);
 
-const currentDifficulty = computed(() => store.state.difficulty);
+const currentDifficulty = computed(() => sudokuStore.difficulty);
 
 const showResetConfirmation = () => {
     isModalOpen.value = true;
 };
 
-const confirmReset = () => {
-    store.dispatch('resetGame');
+const confirmReset = async () => {
+    await sudokuStore.resetGame();
     emit('game-reset');
     isModalOpen.value = false;
 };
@@ -43,6 +43,7 @@ const changeDifficulty = (newDifficulty) => {
         emit('difficulty-changed', newDifficulty);
     }
 };
+
 </script>
 
 <style scoped>
