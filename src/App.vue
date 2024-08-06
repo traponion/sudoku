@@ -19,19 +19,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useStore } from 'vuex';
+import { useSudokuStore } from './store/sudokuStore';
 import SudokuGrid from './components/SudokuGrid.vue';
 import GameControls from './components/GameControls.vue';
 import UpdateHistory from './components/UpdateHistory.vue';
 
-const store = useStore();
+const store = useSudokuStore();
 
 const selectedCell = ref(null);
 const sudokuGrid = ref(null);
 
-const mistakeCount = computed(() => store.state.mistakeCount);
-const isLoaded = computed(() => store.state.isLoaded);
-const difficulty = computed(() => store.state.difficulty);
+const mistakeCount = computed(() => store.mistakeCount);
+const isLoaded = computed(() => store.isLoaded);
+const difficulty = computed(() => store.difficulty);
 
 const onCellSelected = (cell) => {
   selectedCell.value = cell;
@@ -39,30 +39,30 @@ const onCellSelected = (cell) => {
 
 const selectNumber = (number) => {
   if (selectedCell.value) {
-    store.dispatch('updateCell', { ...selectedCell.value, number });
+    store.updateCellAction({ ...selectedCell.value, number });
   }
 };
 
 const eraseNumber = () => {
   if (selectedCell.value) {
-    store.dispatch('updateCell', { ...selectedCell.value, number: 0 });
+    store.updateCellAction({ ...selectedCell.value, number: 0 });
   }
 };
 
 const onGameReset = async () => {
   selectedCell.value = null;
-  const newSudokuState = await store.dispatch('resetGame');
+  const newSudokuState = await store.resetGame();
   await sudokuGrid.value.playResetAnimation(newSudokuState);
 };
 
 const onDifficultyChanged = async (newDifficulty) => {
   selectedCell.value = null;
-  const newSudokuState = await store.dispatch('setDifficulty', newDifficulty);
+  const newSudokuState = await store.setDifficultyAction(newDifficulty);
   await sudokuGrid.value.playResetAnimation(newSudokuState);
 };
 
 onMounted(() => {
-  store.dispatch('loadGameState');
+  store.loadGameState();
 });
 </script>
 

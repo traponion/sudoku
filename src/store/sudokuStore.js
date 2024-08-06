@@ -1,64 +1,62 @@
-import { createStore } from 'vuex';
+import { defineStore } from 'pinia';
 
-export default createStore({
-    state: {
+export const useSudokuStore = defineStore('sudoku', {
+    state: () => ({
         sudokuGrid: [],
         initialGrid: [],
         solvedSudokuGrid: [],
         mistakeCount: 0,
         isLoaded: false,
         difficulty: 'normal',
-    },
-    mutations: {
-        setSudokuGrid(state, grid) {
-            state.sudokuGrid = grid;
-        },
-        setInitialGrid(state, grid) {
-            state.initialGrid = grid;
-        },
-        setSolvedSudokuGrid(state, grid) {
-            state.solvedSudokuGrid = grid;
-        },
-        updateCell(state, { row, col, number }) {
-            state.sudokuGrid[row][col] = number;
-        },
-        incrementMistakeCount(state) {
-            state.mistakeCount++;
-        },
-        setMistakeCount(state, count) {
-            state.mistakeCount = count;
-        },
-        resetMistakeCount(state) {
-            state.mistakeCount = 0;
-        },
-        setIsLoaded(state, value) {
-            state.isLoaded = value;
-        },
-        setDifficulty(state, difficulty) {
-            state.difficulty = difficulty;
-        },
-    },
+    }),
     actions: {
-        async loadGameState({ commit, dispatch }) {
+        setSudokuGrid(grid) {
+            this.sudokuGrid = grid;
+        },
+        setInitialGrid(grid) {
+            this.initialGrid = grid;
+        },
+        setSolvedSudokuGrid(grid) {
+            this.solvedSudokuGrid = grid;
+        },
+        updateCell({ row, col, number }) {
+            this.sudokuGrid[row][col] = number;
+        },
+        incrementMistakeCount() {
+            this.mistakeCount++;
+        },
+        setMistakeCount(count) {
+            this.mistakeCount = count;
+        },
+        resetMistakeCount() {
+            this.mistakeCount = 0;
+        },
+        setIsLoaded(value) {
+            this.isLoaded = value;
+        },
+        setDifficulty(difficulty) {
+            this.difficulty = difficulty;
+        },
+        async loadGameState() {
             const savedState = localStorage.getItem('sudokuGameState');
             if (savedState) {
                 const gameState = JSON.parse(savedState);
-                commit('setSudokuGrid', gameState.sudokuGrid);
-                commit('setInitialGrid', gameState.initialGrid);
-                commit('setSolvedSudokuGrid', gameState.solvedSudokuGrid);
-                commit('setMistakeCount', gameState.mistakeCount);
-                commit('setDifficulty', gameState.difficulty);
+                this.setSudokuGrid(gameState.sudokuGrid);
+                this.setInitialGrid(gameState.initialGrid);
+                this.setSolvedSudokuGrid(gameState.solvedSudokuGrid);
+                this.setMistakeCount(gameState.mistakeCount);
+                this.setDifficulty(gameState.difficulty);
             } else {
-                await dispatch('generateSudoku');
+                await this.generateSudoku();
             }
-            commit('setIsLoaded', true);
+            this.setIsLoaded(true);
         },
-        generateSudoku({ commit, dispatch, state }) {
-            const { grid, solvedGrid } = generateSudoku(state.difficulty);
-            commit('setSudokuGrid', grid);
-            commit('setInitialGrid', JSON.parse(JSON.stringify(grid)));
-            commit('setSolvedSudokuGrid', solvedGrid);
-            dispatch('saveGameState');
+        async generateSudoku() {
+            const { grid, solvedGrid } = generateSudoku(this.difficulty);
+            this.setSudokuGrid(grid);
+            this.setInitialGrid(JSON.parse(JSON.stringify(grid)));
+            this.setSolvedSudokuGrid(solvedGrid);
+            this.saveGameState();
 
             return {
                 sudokuGrid: grid,
@@ -66,43 +64,44 @@ export default createStore({
                 solvedSudokuGrid: solvedGrid
             };
         },
-        updateCell({ commit, state, dispatch }, payload) {
-            if (state.initialGrid[payload.row][payload.col] === 0) {
-                const currentValue = state.sudokuGrid[payload.row][payload.col];
-                const correctValue = state.solvedSudokuGrid[payload.row][payload.col];
+        updateCellAction({ row, col, number }) {
+            if (this.initialGrid[row][col] === 0) {
+                const currentValue = this.sudokuGrid[row][col];
+                const correctValue = this.solvedSudokuGrid[row][col];
 
-                commit('updateCell', payload);
+                this.updateCell({ row, col, number });
 
-                if (payload.number !== 0 && payload.number !== currentValue) {
-                    if (payload.number !== correctValue) {
-                        commit('incrementMistakeCount');
+                if (number !== 0 && number !== currentValue) {
+                    if (number !== correctValue) {
+                        this.incrementMistakeCount();
                     }
                 }
 
-                dispatch('saveGameState');
+                this.saveGameState();
             }
         },
-        saveGameState({ state }) {
+        saveGameState() {
             const gameState = {
-                sudokuGrid: state.sudokuGrid,
-                initialGrid: state.initialGrid,
-                solvedSudokuGrid: state.solvedSudokuGrid,
-                mistakeCount: state.mistakeCount,
-                difficulty: state.difficulty,
+                sudokuGrid: this.sudokuGrid,
+                initialGrid: this.initialGrid,
+                solvedSudokuGrid: this.solvedSudokuGrid,
+                mistakeCount: this.mistakeCount,
+                difficulty: this.difficulty,
             };
             localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
         },
-        resetGame({ dispatch, commit }) {
-            commit('resetMistakeCount');
-            return dispatch('generateSudoku');
+        async resetGame() {
+            this.resetMistakeCount();
+            return this.generateSudoku();
         },
-        setDifficulty({ commit, dispatch }, difficulty) {
-            commit('setDifficulty', difficulty);
-            return dispatch('generateSudoku');
+        async setDifficultyAction(difficulty) {
+            this.setDifficulty(difficulty);
+            return this.generateSudoku();
         },
     },
 });
 
+// Helper functions
 function generateSudoku(difficulty) {
     const grid = createEmptyGrid();
     if (fillGrid(grid)) {
@@ -110,7 +109,7 @@ function generateSudoku(difficulty) {
         removeNumbers(grid, difficulty);
         return { grid, solvedGrid };
     }
-    return null; // 稀に生成に失敗した場合
+    return null;
 }
 
 function createEmptyGrid() {
@@ -119,7 +118,7 @@ function createEmptyGrid() {
 
 function fillGrid(grid) {
     const emptyCell = findEmptyCell(grid);
-    if (!emptyCell) return true; // グリッドが完全に埋まっている
+    if (!emptyCell) return true;
 
     const [row, col] = emptyCell;
     const numbers = shuffleArray([1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -128,20 +127,15 @@ function fillGrid(grid) {
         if (isValid(grid, row, col, num)) {
             grid[row][col] = num;
             if (fillGrid(grid)) return true;
-            grid[row][col] = 0; // バックトラック
+            grid[row][col] = 0;
         }
     }
 
-    return false; // 解決策が見つからない
+    return false;
 }
 
 function removeNumbers(grid, difficulty) {
-    const cellsToRemove = [];
-    for (let i = 0; i < 81; i++) {
-        cellsToRemove.push(i);
-    }
-    shuffleArray(cellsToRemove);
-
+    const cellsToRemove = shuffleArray([...Array(81).keys()]);
     const difficultySettings = {
         easy: { totalRemove: 35, maxPerColumn: 5 },
         normal: { totalRemove: 45, maxPerColumn: 6 },
@@ -219,22 +213,18 @@ function findEmptyCell(grid) {
 }
 
 function isValid(grid, row, col, num) {
-    // 行をチェック
-    for (let x = 0; x < 9; x++) {
-        if (grid[row][x] === num) return false;
-    }
+    // Row check
+    if (grid[row].includes(num)) return false;
 
-    // 列をチェック
-    for (let x = 0; x < 9; x++) {
-        if (grid[x][col] === num) return false;
-    }
+    // Column check
+    if (grid.some(r => r[col] === num)) return false;
 
-    // 3x3ボックスをチェック
-    let startRow = row - row % 3,
-        startCol = col - col % 3;
+    // 3x3 box check
+    const boxRow = Math.floor(row / 3) * 3;
+    const boxCol = Math.floor(col / 3) * 3;
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
-            if (grid[i + startRow][j + startCol] === num) return false;
+            if (grid[boxRow + i][boxCol + j] === num) return false;
         }
     }
 

@@ -17,7 +17,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useStore } from 'vuex';
+import { useSudokuStore } from '../store/sudokuStore';
 import { defineProps, defineEmits, defineExpose } from 'vue';
 
 const props = defineProps({
@@ -26,13 +26,13 @@ const props = defineProps({
 
 const emit = defineEmits(['cell-selected']);
 
-const store = useStore();
+const store = useSudokuStore();
 const isAnimating = ref(false);
 const animationGrid = ref([]);
 
-const sudokuGrid = computed(() => store.state.sudokuGrid);
-const initialGrid = computed(() => store.state.initialGrid);
-const solvedSudokuGrid = computed(() => store.state.solvedSudokuGrid);
+const sudokuGrid = computed(() => store.sudokuGrid);
+const initialGrid = computed(() => store.initialGrid);
+const solvedSudokuGrid = computed(() => store.solvedSudokuGrid);
 
 const flattenedGrid = computed(() =>
     isAnimating.value ? animationGrid.value.flat() : sudokuGrid.value.flat()
@@ -90,9 +90,9 @@ const playResetAnimation = async (newState) => {
     await wait(300);
     isAnimating.value = false;
 
-    store.commit('setSudokuGrid', newState.sudokuGrid);
-    store.commit('setInitialGrid', newState.initialGrid);
-    store.commit('setSolvedSudokuGrid', newState.solvedSudokuGrid);
+    store.setSudokuGrid(newState.sudokuGrid);
+    store.setInitialGrid(newState.initialGrid);
+    store.setSolvedSudokuGrid(newState.solvedSudokuGrid);
 };
 
 defineExpose({ playResetAnimation });
