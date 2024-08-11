@@ -1,15 +1,15 @@
 <template>
     <div class="game-controls">
-        <button @click="showResetConfirmation" class="reset-button">リセット</button>
+        <button @click="togglePencilMode" :class="['pencil-mode-button', { active: isPencilMode }, 'exclude-from-deselect']">
+            {{ isPencilMode ? '仮置きモード: ON' : '仮置きモード: OFF' }}
+        </button>
         <div class="difficulty-selector">
             <button v-for="diff in ['easy', 'normal', 'hard']" :key="diff" @click="changeDifficulty(diff)"
                 :class="['difficulty-button', { active: currentDifficulty === diff }]">
                 {{ diff.charAt(0).toUpperCase() + diff.slice(1) }}
             </button>
         </div>
-        <button @click="togglePencilMode" :class="['pencil-mode-button', { active: isPencilMode }]">
-            {{ isPencilMode ? '下書きモード: ON' : '下書きモード: OFF' }}
-        </button>
+        <button @click="showResetConfirmation" class="reset-button">リセット</button>
         <ConfirmModal :isOpen="isModalOpen" title="ゲームリセット" message="本当にゲームをリセットしますか？進行状況は失われます。"
             @confirm="confirmReset" @cancel="cancelReset" />
     </div>
@@ -125,5 +125,9 @@ const togglePencilMode = () => {
     color: white;
     background-color: #2196F3;
     border-color: #1E88E5;
+}
+
+.reset-button{
+    margin-top: 10px;
 }
 </style>

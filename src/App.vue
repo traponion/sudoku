@@ -88,15 +88,16 @@ onMounted(() => {
 const handleOutsideClick = (event) => {
   const sudokuGridElement = document.querySelector('.sudoku-grid');
   const numberSelectorElement = document.querySelector('.number-selector');
+  const pencilModeButton = document.querySelector('.exclude-from-deselect');
   if (
     sudokuGridElement &&
     !sudokuGridElement.contains(event.target) &&
-    !numberSelectorElement.contains(event.target)
+    !numberSelectorElement.contains(event.target) &&
+    !pencilModeButton.contains(event.target)  // 新しい条件を追加
   ) {
     selectedCell.value = null;
   }
 };
-
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleOutsideClick);
 });

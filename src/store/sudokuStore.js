@@ -101,6 +101,7 @@ export const useSudokuStore = defineStore('sudoku', {
         },
         async setDifficultyAction(difficulty) {
             this.setDifficulty(difficulty);
+            this.resetMistakeCount();
             this.resetPencilMarks();
             return this.generateSudoku();
         },
