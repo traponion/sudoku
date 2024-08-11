@@ -33,8 +33,8 @@ const showResetConfirmation = () => {
 };
 
 const confirmReset = async () => {
-    await sudokuStore.resetGame();
-    emit('game-reset');
+    const newState = await sudokuStore.resetGame();
+    emit('game-reset', newState);
     isModalOpen.value = false;
 };
 
@@ -42,9 +42,10 @@ const cancelReset = () => {
     isModalOpen.value = false;
 };
 
-const changeDifficulty = (newDifficulty) => {
+const changeDifficulty = async (newDifficulty) => {
     if (currentDifficulty.value !== newDifficulty) {
-        emit('difficulty-changed', newDifficulty);
+        const newState = await sudokuStore.setDifficultyAction(newDifficulty);
+        emit('difficulty-changed', newState);
     }
 };
 

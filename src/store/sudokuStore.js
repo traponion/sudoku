@@ -96,10 +96,12 @@ export const useSudokuStore = defineStore('sudoku', {
         },
         async resetGame() {
             this.resetMistakeCount();
+            this.resetPencilMarks();
             return this.generateSudoku();
         },
         async setDifficultyAction(difficulty) {
             this.setDifficulty(difficulty);
+            this.resetPencilMarks();
             return this.generateSudoku();
         },
         setPencilMark(row, col, number) {

@@ -18,6 +18,7 @@
     <UpdateHistory />
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useSudokuStore } from './store/sudokuStore';
@@ -27,6 +28,7 @@ import UpdateHistory from './components/UpdateHistory.vue';
 
 const store = useSudokuStore();
 const isPencilMode = ref(false);
+
 
 const togglePencilMode = () => {
   isPencilMode.value = !isPencilMode.value;
@@ -67,16 +69,14 @@ const eraseNumber = () => {
   }
 };
 
-const onGameReset = async () => {
+const onGameReset = async (newState) => {
   selectedCell.value = null;
-  const newSudokuState = await store.resetGame();
-  await sudokuGrid.value.playResetAnimation(newSudokuState);
+  await sudokuGrid.value.playResetAnimation(newState);
 };
 
-const onDifficultyChanged = async (newDifficulty) => {
+const onDifficultyChanged = async (newState) => {
   selectedCell.value = null;
-  const newSudokuState = await store.setDifficultyAction(newDifficulty);
-  await sudokuGrid.value.playResetAnimation(newSudokuState);
+  await sudokuGrid.value.playResetAnimation(newState);
 };
 
 onMounted(() => {
