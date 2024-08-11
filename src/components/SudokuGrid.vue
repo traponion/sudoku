@@ -14,8 +14,8 @@
                 </template>
                 <template v-else-if="hasPencilMarks(Math.floor(index / 9), index % 9)">
                     <div class="pencil-marks">
-                        <span v-for="n in filteredPencilMarks(Math.floor(index / 9), index % 9)" :key="n"
-                            class="pencil-mark">
+                        <span v-for="n in 9" :key="n" class="pencil-mark"
+                            :class="{ 'visible': isPencilMark(Math.floor(index / 9), index % 9, n) }">
                             {{ n }}
                         </span>
                     </div>
@@ -111,10 +111,6 @@ const playResetAnimation = async (newState) => {
     store.setSolvedSudokuGrid(newState.solvedSudokuGrid);
 };
 
-const filteredPencilMarks = (row, col) => {
-    return [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => isPencilMark(row, col, n));
-};
-
 defineExpose({ playResetAnimation });
 </script>
 
@@ -163,6 +159,12 @@ defineExpose({ playResetAnimation });
     display: flex;
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.pencil-mark.visible {
+    opacity: 1;
 }
 
 .cell:nth-child(3n) {
@@ -204,16 +206,13 @@ defineExpose({ playResetAnimation });
 
 .animating .cell:not(.floating) {
     color: #808080 !important;
-    /* アニメーション中の非浮遊セルは灰色 */
 }
 
 .floating {
     transform: translateZ(20px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     z-index: 1;
-    /* 他のセルよりも前面に表示 */
 }
-
 
 .sinking {
     animation: sink 0.3s ease-out forwards;
