@@ -7,6 +7,9 @@
                 {{ diff.charAt(0).toUpperCase() + diff.slice(1) }}
             </button>
         </div>
+        <button @click="togglePencilMode" :class="['pencil-mode-button', { active: isPencilMode }]">
+            {{ isPencilMode ? '下書きモード: ON' : '下書きモード: OFF' }}
+        </button>
         <ConfirmModal :isOpen="isModalOpen" title="ゲームリセット" message="本当にゲームをリセットしますか？進行状況は失われます。"
             @confirm="confirmReset" @cancel="cancelReset" />
     </div>
@@ -18,9 +21,10 @@ import { useSudokuStore } from '../store/sudokuStore';
 import ConfirmModal from './ConfirmModal.vue';
 
 const sudokuStore = useSudokuStore();
-const emit = defineEmits(['game-reset', 'difficulty-changed']);
+const emit = defineEmits(['game-reset', 'difficulty-changed', 'toggle-pencil-mode']);
 
 const isModalOpen = ref(false);
+const isPencilMode = ref(false);
 
 const currentDifficulty = computed(() => sudokuStore.difficulty);
 
@@ -44,6 +48,10 @@ const changeDifficulty = (newDifficulty) => {
     }
 };
 
+const togglePencilMode = () => {
+    isPencilMode.value = !isPencilMode.value;
+    emit('toggle-pencil-mode', isPencilMode.value);
+};
 </script>
 
 <style scoped>
@@ -94,5 +102,27 @@ const changeDifficulty = (newDifficulty) => {
     color: white;
     background-color: #4CAF50;
     border-color: #45a049;
+}
+
+.pencil-mode-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #333;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+}
+
+.pencil-mode-button:hover {
+    background-color: #e0e0e0;
+}
+
+.pencil-mode-button.active {
+    color: white;
+    background-color: #2196F3;
+    border-color: #1E88E5;
 }
 </style>
