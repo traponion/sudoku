@@ -9,7 +9,17 @@
                 'floating': (isAnimating && cell !== 0) || isSelected(Math.floor(index / 9), index % 9),
                 'sinking': isAnimating && cell === 0
             }" @click="selectCell(Math.floor(index / 9), index % 9)">
-                {{ cell !== 0 ? cell : '' }}
+                <template v-if="cell !== 0">
+                    {{ cell }}
+                </template>
+                <template v-else-if="hasPencilMarks(Math.floor(index / 9), index % 9)">
+                    <div class="pencil-marks">
+                        <span v-for="n in 9" :key="n" class="pencil-mark"
+                            :class="{ 'visible': isPencilMark(Math.floor(index / 9), index % 9, n) }">
+                            {{ n }}
+                        </span>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -21,7 +31,8 @@ import { useSudokuStore } from '../store/sudokuStore';
 import { defineProps, defineEmits, defineExpose } from 'vue';
 
 const props = defineProps({
-    selectedCell: Object
+    selectedCell: Object,
+    isPencilMode: Boolean
 });
 
 const emit = defineEmits(['cell-selected']);
@@ -33,6 +44,7 @@ const animationGrid = ref([]);
 const sudokuGrid = computed(() => store.sudokuGrid);
 const initialGrid = computed(() => store.initialGrid);
 const solvedSudokuGrid = computed(() => store.solvedSudokuGrid);
+const pencilMarks = computed(() => store.pencilMarks);
 
 const flattenedGrid = computed(() =>
     isAnimating.value ? animationGrid.value.flat() : sudokuGrid.value.flat()
@@ -52,6 +64,10 @@ const isInitialCell = (row, col) => initialGrid.value[row][col] !== 0;
 const isIncorrectCell = (row, col) =>
     sudokuGrid.value[row][col] !== 0 &&
     sudokuGrid.value[row][col] !== solvedSudokuGrid.value[row][col];
+
+const hasPencilMarks = (row, col) => pencilMarks.value[row][col].length > 0;
+
+const isPencilMark = (row, col, number) => pencilMarks.value[row][col].includes(number);
 
 const generateRandomGrid = () =>
     Array(9).fill().map(() => Array(9).fill().map(() => Math.floor(Math.random() * 9) + 1));
@@ -126,6 +142,29 @@ defineExpose({ playResetAnimation });
     font-size: 24px;
     font-weight: bold;
     transition: all 0.3s ease-out;
+    position: relative;
+}
+
+.pencil-marks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 100%;
+    height: 100%;
+    font-size: 10px;
+    color: #666;
+}
+
+.pencil-mark {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.pencil-mark.visible {
+    opacity: 1;
 }
 
 .cell:nth-child(3n) {
@@ -167,16 +206,13 @@ defineExpose({ playResetAnimation });
 
 .animating .cell:not(.floating) {
     color: #808080 !important;
-    /* アニメーション中の非浮遊セルは灰色 */
 }
 
 .floating {
     transform: translateZ(20px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     z-index: 1;
-    /* 他のセルよりも前面に表示 */
 }
-
 
 .sinking {
     animation: sink 0.3s ease-out forwards;

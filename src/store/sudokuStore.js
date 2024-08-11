@@ -8,6 +8,7 @@ export const useSudokuStore = defineStore('sudoku', {
         mistakeCount: 0,
         isLoaded: false,
         difficulty: 'normal',
+        pencilMarks: Array(9).fill().map(() => Array(9).fill().map(() => [])),
     }),
     actions: {
         setSudokuGrid(grid) {
@@ -46,8 +47,10 @@ export const useSudokuStore = defineStore('sudoku', {
                 this.setSolvedSudokuGrid(gameState.solvedSudokuGrid);
                 this.setMistakeCount(gameState.mistakeCount);
                 this.setDifficulty(gameState.difficulty);
+                this.pencilMarks = gameState.pencilMarks || Array(9).fill().map(() => Array(9).fill().map(() => []));
             } else {
                 await this.generateSudoku();
+                this.resetPencilMarks();
             }
             this.setIsLoaded(true);
         },
@@ -87,17 +90,35 @@ export const useSudokuStore = defineStore('sudoku', {
                 solvedSudokuGrid: this.solvedSudokuGrid,
                 mistakeCount: this.mistakeCount,
                 difficulty: this.difficulty,
+                pencilMarks: this.pencilMarks,
             };
             localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
         },
         async resetGame() {
             this.resetMistakeCount();
+            this.resetPencilMarks();
             return this.generateSudoku();
         },
         async setDifficultyAction(difficulty) {
             this.setDifficulty(difficulty);
+            this.resetMistakeCount();
+            this.resetPencilMarks();
             return this.generateSudoku();
         },
+        setPencilMark(row, col, number) {
+            const index = this.pencilMarks[row][col].indexOf(number);
+            if (index === -1) {
+                this.pencilMarks[row][col].push(number);
+            } else {
+                this.pencilMarks[row][col].splice(index, 1);
+            }
+        },
+        clearPencilMarks(row, col) {
+            this.pencilMarks[row][col] = [];
+        },
+        resetPencilMarks() {
+            this.pencilMarks = Array(9).fill().map(() => Array(9).fill().map(() => []));
+        },        
     },
 });
 
@@ -139,7 +160,7 @@ function removeNumbers(grid, difficulty) {
     const difficultySettings = {
         easy: { totalRemove: 35, maxPerColumn: 5 },
         normal: { totalRemove: 45, maxPerColumn: 6 },
-        hard: { totalRemove: 55, maxPerColumn: 7 },
+        hard: { totalRemove: 60, maxPerColumn: 9 },
     };
 
     const setting = difficultySettings[difficulty];

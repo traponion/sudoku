@@ -14,6 +14,10 @@ import { ref } from 'vue'
 
 const updates = ref([
     {
+        date: '2024-08-11',
+        description: '仮置き機能を追加'
+    },
+    {
         date: '2024-08-05',
         description: '難易度設定機能を追加'
     },
