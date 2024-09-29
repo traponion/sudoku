@@ -1,4 +1,3 @@
-<!-- SudokuCell.vue -->
 <template>
   <div class="cell" :class="{
     'selected': isSelected,
@@ -6,7 +5,9 @@
     'incorrect': isIncorrect,
     'selectable': !isInitial,
     'floating': (isAnimating && value !== 0) || isSelected,
-    'sinking': isAnimating && value === 0
+    'sinking': isAnimating && value === 0,
+    'right-border': (col + 1) % 3 === 0,
+    'bottom-border': (row + 1) % 3 === 0
   }" @click="selectCell">
     <template v-if="value !== 0">
       {{ value }}
@@ -58,6 +59,8 @@ const selectCell = () => {
   font-weight: bold;
   transition: all 0.3s ease-out;
   position: relative;
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
 .pencil-marks {
@@ -122,5 +125,30 @@ const selectCell = () => {
     transform: translateZ(0);
     box-shadow: none;
   }
+}
+
+.cell.right-border {
+  border-right: 2px solid #000;
+}
+
+.cell.bottom-border {
+  border-bottom: 2px solid #000;
+}
+
+.cell:nth-child(3n) {
+  border-right: 2px solid #000;
+}
+
+.cell:nth-child(9n) {
+  border-right: none;
+}
+
+.cell:nth-child(n+19):nth-child(-n+27),
+.cell:nth-child(n+46):nth-child(-n+54) {
+  border-bottom: 2px solid #000;
+}
+
+.cell:nth-child(n+73):nth-child(-n+81) {
+  border-bottom: none;
 }
 </style>
