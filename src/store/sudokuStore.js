@@ -9,6 +9,8 @@ export const useSudokuStore = defineStore('sudoku', {
         isLoaded: false,
         difficulty: 'normal',
         pencilMarks: Array(9).fill().map(() => Array(9).fill().map(() => [])),
+        isGameCleared: false,
+        isGameLocked: false,
     }),
     actions: {
         setSudokuGrid(grid) {
@@ -48,6 +50,8 @@ export const useSudokuStore = defineStore('sudoku', {
                 this.setMistakeCount(gameState.mistakeCount);
                 this.setDifficulty(gameState.difficulty);
                 this.pencilMarks = gameState.pencilMarks || Array(9).fill().map(() => Array(9).fill().map(() => []));
+                this.isGameCleared = gameState.isGameCleared || false;
+                this.isGameLocked = gameState.isGameLocked || false;
             } else {
                 await this.generateSudoku();
                 this.resetPencilMarks();
@@ -67,22 +71,6 @@ export const useSudokuStore = defineStore('sudoku', {
                 solvedSudokuGrid: solvedGrid
             };
         },
-        updateCellAction({ row, col, number }) {
-            if (this.initialGrid[row][col] === 0) {
-                const currentValue = this.sudokuGrid[row][col];
-                const correctValue = this.solvedSudokuGrid[row][col];
-
-                this.updateCell({ row, col, number });
-
-                if (number !== 0 && number !== currentValue) {
-                    if (number !== correctValue) {
-                        this.incrementMistakeCount();
-                    }
-                }
-
-                this.saveGameState();
-            }
-        },
         saveGameState() {
             const gameState = {
                 sudokuGrid: this.sudokuGrid,
@@ -91,16 +79,21 @@ export const useSudokuStore = defineStore('sudoku', {
                 mistakeCount: this.mistakeCount,
                 difficulty: this.difficulty,
                 pencilMarks: this.pencilMarks,
+                isGameCleared: this.isGameCleared,
+                isGameLocked: this.isGameLocked,
             };
             localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
         },
         async resetGame() {
+            this.isGameCleared = false;
+            this.isGameLocked = false;
             this.resetMistakeCount();
             this.resetPencilMarks();
             return this.generateSudoku();
         },
         async setDifficultyAction(difficulty) {
             this.setDifficulty(difficulty);
+            this.isGameLocked = false;
             this.resetMistakeCount();
             this.resetPencilMarks();
             return this.generateSudoku();
@@ -118,7 +111,40 @@ export const useSudokuStore = defineStore('sudoku', {
         },
         resetPencilMarks() {
             this.pencilMarks = Array(9).fill().map(() => Array(9).fill().map(() => []));
-        },        
+        },
+        checkGameClear() {
+            const isCleared = this.sudokuGrid.every((row, rowIndex) =>
+                row.every((cell, colIndex) => cell === this.solvedSudokuGrid[rowIndex][colIndex])
+            );
+            this.isGameCleared = isCleared;
+            if (isCleared) {
+                this.setGameLocked(true);
+            }
+            this.saveGameState();
+            return isCleared;
+        },
+        updateCellAction({ row, col, number }) {
+            if (this.isGameLocked) return;
+            if (this.initialGrid[row][col] === 0) {
+                const currentValue = this.sudokuGrid[row][col];
+                const correctValue = this.solvedSudokuGrid[row][col];
+
+                this.updateCell({ row, col, number });
+
+                if (number !== 0 && number !== currentValue) {
+                    if (number !== correctValue) {
+                        this.incrementMistakeCount();
+                    }
+                }
+
+                this.saveGameState();
+                this.checkGameClear();
+            }
+        },
+        setGameLocked(value) {
+            this.isGameLocked = value;
+            this.saveGameState();
+        },
     },
 });
 
