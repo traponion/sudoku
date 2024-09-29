@@ -14,6 +14,10 @@ import { ref } from 'vue'
 
 const updates = ref([
     {
+        date: '2024-09-29',
+        description: 'クリア表示を追加'
+    },
+    {
         date: '2024-08-11',
         description: '仮置き機能を追加'
     },
