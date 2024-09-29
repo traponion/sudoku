@@ -17,12 +17,12 @@
 </template>
 
 <script setup>
-import { ref, computed, defineEmits } from 'vue';
+import { ref, computed } from 'vue';
 import { useSudokuStore } from '../store/sudokuStore';
 import ConfirmModal from './ConfirmModal.vue';
 
 const sudokuStore = useSudokuStore();
-const emit = defineEmits(['game-reset', 'difficulty-changed', 'toggle-pencil-mode']);
+const emit = defineEmits(['game-reset', 'difficulty-changed', 'toggle-pencil-mode', 'clear-game']);
 
 const isModalOpen = ref(false);
 const isPencilMode = ref(false);
@@ -34,6 +34,7 @@ const showResetConfirmation = () => {
 };
 
 const confirmReset = async () => {
+  emit('clear-game');  // 即座にクリア表示を消す
   const newState = await sudokuStore.resetGame();
   emit('game-reset', newState);
   isModalOpen.value = false;
@@ -45,6 +46,7 @@ const cancelReset = () => {
 
 const changeDifficulty = async (newDifficulty) => {
   if (currentDifficulty.value !== newDifficulty) {
+    emit('clear-game');  // 即座にクリア表示を消す
     const newState = await sudokuStore.setDifficultyAction(newDifficulty);
     emit('difficulty-changed', newState);
   }

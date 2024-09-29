@@ -12,7 +12,7 @@
       </div>
     </div>
     <GameControls @game-reset="onGameReset" @difficulty-changed="onDifficultyChanged"
-      @toggle-pencil-mode="togglePencilMode" />
+      @toggle-pencil-mode="togglePencilMode" @clear-game="clearGame" />
     <p class="mistake-count">間違った回数: {{ mistakeCount }}</p>
     <p class="current-difficulty">現在の難易度: {{ difficulty }}</p>
     <UpdateHistory />
@@ -38,6 +38,10 @@ const closeClearModal = () => {
   store.hideClearModal();
 };
 
+const clearGame = () => {
+  store.setGameCleared(false);
+  store.hideClearOverlay();
+};
 
 const togglePencilMode = () => {
   isPencilMode.value = !isPencilMode.value;
@@ -90,11 +94,33 @@ const onDifficultyChanged = async (newState) => {
   selectedCell.value = null;
   await sudokuGrid.value.playResetAnimation(newState);
 };
+// コナミコードの実装
+const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+let konamiIndex = 0;
+
+const handleKeydown = (event) => {
+  if (event.code === konamiCode[konamiIndex]) {
+    konamiIndex++;
+    if (konamiIndex === konamiCode.length) {
+      activateKonamiCode();
+      konamiIndex = 0;
+    }
+  } else {
+    konamiIndex = 0;
+  }
+};
+
+const activateKonamiCode = () => {
+  // 数独を解く
+  const solvedGrid = store.solvedSudokuGrid;
+  store.setSudokuGrid(JSON.parse(JSON.stringify(solvedGrid)));
+  store.setGameCleared(true);
+};
 
 onMounted(() => {
   store.loadGameState();
-
   document.addEventListener('mousedown', handleOutsideClick);
+  document.addEventListener('keydown', handleKeydown);
 });
 
 const handleOutsideClick = (event) => {
@@ -113,6 +139,7 @@ const handleOutsideClick = (event) => {
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleOutsideClick);
+  document.removeEventListener('keydown', handleKeydown);
 });
 </script>
 

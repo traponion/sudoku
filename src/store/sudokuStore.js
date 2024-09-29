@@ -1,4 +1,3 @@
-// sudokuStore.js
 import { defineStore } from 'pinia';
 import { generateSudoku, isValid, solveSudoku } from '../services/sudokuService';
 
@@ -103,6 +102,7 @@ export const useSudokuStore = defineStore('sudoku', {
       this.resetMistakeCount();
       this.resetPencilMarks();
       await this.generateNewGame();
+      this.saveGameState();
       return {
         sudokuGrid: this.sudokuGrid,
         initialGrid: this.initialGrid,
@@ -111,10 +111,13 @@ export const useSudokuStore = defineStore('sudoku', {
     },
     async setDifficultyAction(difficulty) {
       this.setDifficulty(difficulty);
+      this.isGameCleared = false;
       this.isGameLocked = false;
+      this.showClearOverlay = false;
       this.resetMistakeCount();
       this.resetPencilMarks();
       await this.generateNewGame();
+      this.saveGameState();
       return {
         sudokuGrid: this.sudokuGrid,
         initialGrid: this.initialGrid,
