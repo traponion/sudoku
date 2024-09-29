@@ -2,7 +2,7 @@
   <div id="app" v-if="isLoaded">
     <h1 class="game-title">数独ゲーム</h1>
     <SudokuGrid @cell-selected="onCellSelected" :selectedCell="selectedCell" :isPencilMode="isPencilMode"
-      :isGameLocked="isGameLocked" ref="sudokuGrid" />
+      :isGameLocked="isGameLocked" :showClearOverlay="showClearOverlay" ref="sudokuGrid" />
     <div class="number-selector" @mousedown.stop :class="{ 'disabled': isGameLocked }">
       <div v-for="n in 9" :key="n" @click="selectNumber(n)" class="number">
         {{ n }}
@@ -32,10 +32,12 @@ const store = useSudokuStore();
 const isPencilMode = ref(false);
 
 const isGameCleared = computed(() => store.isGameCleared);
+const showClearOverlay = computed(() => store.showClearOverlay);
 
 const closeClearModal = () => {
-  store.isGameCleared = false;
+  store.hideClearModal();
 };
+
 
 const togglePencilMode = () => {
   isPencilMode.value = !isPencilMode.value;

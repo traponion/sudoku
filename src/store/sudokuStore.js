@@ -11,6 +11,7 @@ export const useSudokuStore = defineStore('sudoku', {
         pencilMarks: Array(9).fill().map(() => Array(9).fill().map(() => [])),
         isGameCleared: false,
         isGameLocked: false,
+        showClearOverlay: false,
     }),
     actions: {
         setSudokuGrid(grid) {
@@ -40,6 +41,21 @@ export const useSudokuStore = defineStore('sudoku', {
         setDifficulty(difficulty) {
             this.difficulty = difficulty;
         },
+        setGameCleared(value) {
+            this.isGameCleared = value;
+            this.showClearOverlay = value;
+            this.isGameLocked = value;
+            this.saveGameState();
+        },
+        hideClearOverlay() {
+            this.showClearOverlay = false;
+            this.saveGameState();
+        },
+        hideClearModal() {
+            this.isGameCleared = false;
+            // showClearOverlay は変更しない
+            this.saveGameState();
+        },
         async loadGameState() {
             const savedState = localStorage.getItem('sudokuGameState');
             if (savedState) {
@@ -52,6 +68,7 @@ export const useSudokuStore = defineStore('sudoku', {
                 this.pencilMarks = gameState.pencilMarks || Array(9).fill().map(() => Array(9).fill().map(() => []));
                 this.isGameCleared = gameState.isGameCleared || false;
                 this.isGameLocked = gameState.isGameLocked || false;
+                this.showClearOverlay = gameState.showClearOverlay || false;
             } else {
                 await this.generateSudoku();
                 this.resetPencilMarks();
@@ -81,12 +98,14 @@ export const useSudokuStore = defineStore('sudoku', {
                 pencilMarks: this.pencilMarks,
                 isGameCleared: this.isGameCleared,
                 isGameLocked: this.isGameLocked,
+                showClearOverlay: this.showClearOverlay,
             };
             localStorage.setItem('sudokuGameState', JSON.stringify(gameState));
         },
         async resetGame() {
             this.isGameCleared = false;
             this.isGameLocked = false;
+            this.showClearOverlay = false;
             this.resetMistakeCount();
             this.resetPencilMarks();
             return this.generateSudoku();
@@ -116,11 +135,10 @@ export const useSudokuStore = defineStore('sudoku', {
             const isCleared = this.sudokuGrid.every((row, rowIndex) =>
                 row.every((cell, colIndex) => cell === this.solvedSudokuGrid[rowIndex][colIndex])
             );
-            this.isGameCleared = isCleared;
             if (isCleared) {
+                this.setGameCleared(true);
                 this.setGameLocked(true);
             }
-            this.saveGameState();
             return isCleared;
         },
         updateCellAction({ row, col, number }) {

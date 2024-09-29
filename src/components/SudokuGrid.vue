@@ -22,6 +22,9 @@
         </template>
       </div>
     </div>
+    <div v-if="showClearOverlay" class="clear-overlay">
+      <span class="clear-text">Clear!</span>
+    </div>
   </div>
 </template>
 
@@ -33,7 +36,8 @@ import { defineProps, defineEmits, defineExpose } from 'vue';
 const props = defineProps({
   selectedCell: Object,
   isPencilMode: Boolean,
-  isGameLocked: Boolean
+  isGameLocked: Boolean,
+  showClearOverlay: Boolean
 });
 
 const emit = defineEmits(['cell-selected']);
@@ -121,6 +125,7 @@ defineExpose({ playResetAnimation });
   justify-content: center;
   align-items: center;
   margin: 20px 0;
+  position: relative;
 }
 
 .sudoku-grid {
@@ -233,5 +238,44 @@ defineExpose({ playResetAnimation });
 
 .sudoku-grid.locked .cell {
   cursor: not-allowed;
+}
+
+.clear-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 10;
+}
+
+.clear-text {
+  font-size: 80px;
+  font-weight: bold;
+  color: #4CAF50;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  transform: rotate(-30deg);
+  animation: pop-in 0.5s ease-out;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0) rotate(-30deg);
+    opacity: 0;
+  }
+
+  80% {
+    transform: scale(1.2) rotate(-30deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) rotate(-30deg);
+    opacity: 1;
+  }
 }
 </style>
