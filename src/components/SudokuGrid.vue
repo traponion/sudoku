@@ -1,26 +1,20 @@
+<!-- SudokuGrid.vue -->
 <template>
   <div class="sudoku-container">
     <div class="sudoku-grid" :class="{ 'animating': isAnimating, 'locked': isGameLocked }">
-      <div v-for="(cell, index) in flattenedGrid" :key="index" class="cell" :class="{
-        'selected': isSelected(Math.floor(index / 9), index % 9),
-        'initial': isInitialCell(Math.floor(index / 9), index % 9),
-        'incorrect': isIncorrectCell(Math.floor(index / 9), index % 9),
-        'selectable': !isInitialCell(Math.floor(index / 9), index % 9),
-        'floating': (isAnimating && cell !== 0) || isSelected(Math.floor(index / 9), index % 9),
-        'sinking': isAnimating && cell === 0
-      }" @click="selectCell(Math.floor(index / 9), index % 9)">
-        <template v-if="cell !== 0">
-          {{ cell }}
-        </template>
-        <template v-else-if="hasPencilMarks(Math.floor(index / 9), index % 9)">
-          <div class="pencil-marks">
-            <span v-for="n in 9" :key="n" class="pencil-mark"
-              :class="{ 'visible': isPencilMark(Math.floor(index / 9), index % 9, n) }">
-              {{ n }}
-            </span>
-          </div>
-        </template>
-      </div>
+      <SudokuCell
+        v-for="(cell, index) in flattenedGrid"
+        :key="index"
+        :row="Math.floor(index / 9)"
+        :col="index % 9"
+        :value="cell"
+        :isSelected="isSelected(Math.floor(index / 9), index % 9)"
+        :isInitial="isInitialCell(Math.floor(index / 9), index % 9)"
+        :isIncorrect="isIncorrectCell(Math.floor(index / 9), index % 9)"
+        :isAnimating="isAnimating"
+        :pencilMarks="getPencilMarks(Math.floor(index / 9), index % 9)"
+        @select="selectCell"
+      />
     </div>
     <div v-if="showClearOverlay" class="clear-overlay">
       <span class="clear-text">Clear!</span>
@@ -32,6 +26,7 @@
 import { ref, computed } from 'vue';
 import { useSudokuStore } from '../store/sudokuStore';
 import { defineProps, defineEmits, defineExpose } from 'vue';
+import SudokuCell from './SudokuCell.vue';
 
 const props = defineProps({
   selectedCell: Object,
@@ -55,8 +50,8 @@ const flattenedGrid = computed(() =>
   isAnimating.value ? animationGrid.value.flat() : sudokuGrid.value.flat()
 );
 
-const selectCell = (row, col) => {
-  if (!isInitialCell(row, col) && !isAnimating.value && !props.isGameLocked) {
+const selectCell = ({ row, col }) => {
+  if (!isAnimating.value && !props.isGameLocked) {
     emit('cell-selected', { row, col });
   }
 };
@@ -70,9 +65,7 @@ const isIncorrectCell = (row, col) =>
   sudokuGrid.value[row][col] !== 0 &&
   sudokuGrid.value[row][col] !== solvedSudokuGrid.value[row][col];
 
-const hasPencilMarks = (row, col) => pencilMarks.value[row][col].length > 0;
-
-const isPencilMark = (row, col, number) => pencilMarks.value[row][col].includes(number);
+const getPencilMarks = (row, col) => pencilMarks.value[row][col];
 
 const generateRandomGrid = () =>
   Array(9).fill().map(() => Array(9).fill().map(() => Math.floor(Math.random() * 9) + 1));
@@ -138,102 +131,6 @@ defineExpose({ playResetAnimation });
   width: 450px;
   height: 450px;
   perspective: 1000px;
-}
-
-.cell {
-  background-color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  font-weight: bold;
-  transition: all 0.3s ease-out;
-  position: relative;
-}
-
-.pencil-marks {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  width: 100%;
-  height: 100%;
-  font-size: 10px;
-  color: #666;
-}
-
-.pencil-mark {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.pencil-mark.visible {
-  opacity: 1;
-}
-
-.cell:nth-child(3n) {
-  border-right: 2px solid #000;
-}
-
-.cell:nth-child(n+19):nth-child(-n+27),
-.cell:nth-child(n+46):nth-child(-n+54) {
-  border-bottom: 2px solid #000;
-}
-
-.selected {
-  background-color: #e0e0e0;
-}
-
-.initial {
-  color: #808080;
-}
-
-.incorrect {
-  color: red;
-}
-
-.selectable {
-  cursor: pointer;
-}
-
-.selectable:hover {
-  background-color: #f0f0f0;
-}
-
-.animating {
-  transition: all 0.1s;
-}
-
-.animating .cell {
-  color: #000000 !important;
-}
-
-.animating .cell:not(.floating) {
-  color: #808080 !important;
-}
-
-.floating {
-  transform: translateZ(20px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  z-index: 1;
-}
-
-.sinking {
-  animation: sink 0.3s ease-out forwards;
-}
-
-@keyframes sink {
-  0% {
-    transform: translateZ(20px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  }
-
-  100% {
-    transform: translateZ(0);
-    box-shadow: none;
-  }
 }
 
 .sudoku-grid.locked .cell {
